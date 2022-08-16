@@ -1,0 +1,261 @@
+# 1.Webpack高级
+
+## 1.1 插件 clean-webpack-plugin
+
+作用：每次npm run build时，能够清除dist目录下面的内容，再重新打包。防止缓存的存在，造成一些bug
+
+第一步：下包
+
+```bash
+yarn add clean-webpack-plugin -D
+```
+
+
+
+第二步：webpack.config.js 配置好 注意是按需引入 然后重启
+
+```js
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+```
+
+
+
+第三步：删除dist目录里面的内容
+
+重新npm run build
+
+狂点，dist文件夹，看看他有没有帮我们删了之后再打包
+
+
+
+>每次npm run dev的时候 也会清空dist目录
+
+
+
+
+
+## 1.2 copy-webpack-plugin
+
+作用：能够在打包时，让`不会参与打包的内容`，拷贝到最终的文件夹下面。比如index.html文件里面的png图片，是不会被打包的，dist里面的images文件夹是不会有的。可以通过这个插件来实现
+
+
+
+第一步：测试
+
+如果在src/index.html里面增加一张img标签， 注意不是通过css的方式引入图片，这里的图片的地址我们用了相对路径`../`，来自index.html上一级的图片
+
+```html
+    <ul>
+        <li>123</li>
+        <li>123</li>
+        <li>123</li>
+        <li>
+            <img src="../头像.jpg" alt="">
+        </li>
+    </ul>
+```
+
+<img src="https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/4575/image-20220816162542303.png" alt="image-20220816162542303" style="zoom:33%;" />
+
+第二步，此时我们通过 yarn dev, 启动
+
+<img src="https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/4575/image-20220816162601671.png" alt="image-20220816162601671" style="zoom: 33%;" />
+
+发现图片能够正常显示，但是路径是错的。因为localhost:8080/../头像 本身就是错的，只是服务器已经是根目录，不能再次往上走了，干脆，把当前目录作为图片查询的地址，因此，图片能够正常显示【`dev启动 默认把整个项目作为根目录，而不是src`】
+
+
+
+
+
+
+
+<img src="https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/4575/image-20220816162702042.png" alt="image-20220816162702042" style="zoom:33%;" />
+
+
+
+第四步，src下面的index.html里面改成，才是对的
+
+<img src="https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/4575/image-20220816162816498.png" alt="image-20220816162816498" style="zoom:50%;" />
+
+
+
+dev: 发现 ../a.jpg也是错的
+
+
+
+第五步，我们创建一个assets目录，和src平级，把图片放进去，并且把src/index.html的里面引用的文件改成
+
+![image-20220816163000006](https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/4575/image-20220816163000006.png)
+
+
+
+yarn build是不会打包assets里面的文件，甚至移动到dist里面也不会，
+
+
+
+第六步，下包
+
+```js
+yarn add copy-webpack-plugin -D
+```
+
+
+
+第七步：配置, webpack.config.js 里面的plugins属性 注意查看官网，写法又有新的变化
+
+```js
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: path.join(__dirname, 'assets'),
+                    // 会自动找到入口
+                    to: 'assets'
+                }
+            ]
+        })
+```
+
+
+
+
+
+
+
+第八步：
+
+修改src/index.html里面的路径，直接改为绝对路径，assets/a.jpg
+
+<img src="https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/4575/image-20220816172856880.png" alt="image-20220816172856880" style="zoom:50%;" />
+
+
+
+
+
+第九步：
+
+最终发现，根目录下面的assets里面的图片能够在打包时，copy到dist文件夹下面
+
+<img src="https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/4575/image-20220816172817849.png" alt="image-20220816172817849" style="zoom:50%;" />
+
+如果报错
+
+>CopyWebpackPlugin is not a constructor
+
+表示引入包搞错了
+
+```js
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
+```
+
+上面两个包要这样引入
+
+
+
+
+
+
+
+如果报错
+
+>Failed to load 'D:\heima\front\8. webpack学习\demo2\webpack.config.js' config  
+>[webpack-cli] Invalid options object. Copy Plugin has been initialized using an options object that does not match the API schema.
+>
+> - options[0] has an unknown property 'to'. These properties are valid:
+>   object { patterns, options? }
+
+
+
+遗憾：
+
+1. url-loader的新的方法和旧的方法 多测试
+2. babel
+3. 路径的问题，dev的情况再测试一下，怎么样图片才会显示
+4. source-map复习
+
+
+
+## 1.3 banner-webpack-plugin
+
+作用：给bundle.js的顶部，增加版权信息
+
+
+
+第一步，不用下包，知道 这个是webpack的内置包，
+
+
+
+第二步，webpack.config.js里面引入webpack
+
+```js
+const webpack = require('webpack')
+```
+
+
+
+
+
+第三步：配置
+
+```js
+// 5. banner 增加版权信息的插件
+new webpack.BannerPlugin('李治航的版权')
+```
+
+
+
+第四步：查看bundle.js顶部的信息
+
+
+
+
+
+## 1.4 图片资源，真的要能够打包
+
+之前要么是通过url，打包css的图片
+
+要么是图片的copy复制，
+
+
+
+这里是真的要在html资源里面处理打包。
+
+
+
+第一步，下包
+
+```js
+yarn add html-withimg-loader -D
+```
+
+
+
+第二步，webpack.config.js 的`module`的`rules`属性配置
+
+```js
+// 6. 图片的打包 和 copy的区别，copy更加的全面，是所有资源可以拷贝
+// 以后如果有资源不能打包，但是线上需要，可以使用copy
+// 但是图片我们还是希望能够压缩
+{
+    test: /\.(htm|html)$/i,
+    loader: 'html-withimg-loader'
+}
+```
+
+
+
+第三步，
+
+如果你有地方报错，说这个，那是因为页面中还有地方使用assets文件夹里面图片。这个时候就不要用`绝对路径`了，也不要用assets里面的东西，src/index.html里面要`删掉`assets的引用，要删掉绝对路径。用相对路径，这个包帮我们去构建
+
+![image-20220816174218518](https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/4575/image-20220816174218518.png)
+
+
+
+
+
+第四步，查看
+
+<img src="https://xingqiu-tuchuang-1256524210.cos.ap-shanghai.myqcloud.com/4575/image-20220816174351533.png" alt="image-20220816174351533" style="zoom:50%;" />
+
+我们发现而来,dist包的 images里代码里的图片，就是我们在src/index.html里面使用的，且已经给我们进行了hash编译，这个要多亏了,`url-loader`的功劳
